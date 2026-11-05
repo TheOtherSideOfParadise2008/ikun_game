@@ -4,7 +4,7 @@ Game.player = {
   x: 0, y: 0, w: 60, h: 60,
   hp: 100, maxHp: 100,
   baseSpeed: 320, speedMul: 1,
-  level: 1, exp: 0, expNext: 20,
+  level: 0, exp: 0, expNext: 60,
   fireTimer: 0, fireRateMul: 1,
   dmgMul: 1, bulletSizeMul: 1,
   nailongBalls: 0, ballMode: 'normal',
@@ -55,13 +55,19 @@ Game.player = {
       this.fireTimer = (this.isLizhi ? 0.25 : 0.45) / this.fireRateMul;
     }
   },
-
-  fireBullets: function() {
+    fireBullets: function() {
     var isNailong = this.ballMode === 'nailong';
-    var count = this.isSixArms ? (8 + (Game.talentLevels['t5'] || 1) * 2) : Math.min(this.level, 5);
+    
+    // 👇 核心修复：合并为一处，加上 Math.max(1, ...) 确保 0 级也有保底 1 发子弹
+    var count = this.isSixArms ? (8 + (Game.talentLevels['t5'] || 1) * 2) : Math.max(1, Math.min(this.level, 5));
+    
     if (isNailong) {
       count = Math.min(count, this.nailongBalls);
-      if (count <= 0) { this.ballMode = 'normal'; isNailong = false; count = Math.min(this.level, 5); }
+      if (count <= 0) { 
+        this.ballMode = 'normal'; 
+        isNailong = false; 
+        count = Math.max(1, Math.min(this.level, 5)); // 奶龙球打空时切回普通球，也要保底 1 发
+      }
     }
 
     var size = 30 * this.bulletSizeMul * (1 + (this.level - 1) * 0.05);
@@ -98,10 +104,15 @@ Game.player = {
 
     if (isNailong) {
       this.nailongBalls -= count;
-      if (this.nailongBalls <= 0) { this.nailongBalls = 0; this.ballMode = 'normal'; }
+      if (this.nailongBalls <= 0) { 
+        this.nailongBalls = 0; 
+        this.ballMode = 'normal'; 
+      }
     }
     Game.audio.playSfx('kun_shoot');
   },
+
+
 
   gainExp: function(amount) {
     this.exp += amount;
@@ -111,7 +122,7 @@ Game.player = {
     while (this.exp >= this.expNext) {
       this.exp -= this.expNext;
       this.level++;
-      this.expNext = Math.floor(40 + Math.pow(this.level, 1.5) * 20);
+      this.expNext = Math.floor(10 + Math.pow(this.level, 1.5) * 60);
       this.maxHp += 40; 
       this.hp = this.maxHp;
       this.invuln = Math.max(this.invuln, 0.8);

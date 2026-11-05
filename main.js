@@ -85,27 +85,43 @@ window.addEventListener('keydown', function (e) {
       var talent = Game.unlockedTalents.find(function(t) { return t.key === k; });
       if (talent && (!Game.talentCD[talent.id] || Game.talentCD[talent.id] <= 0)) {
         var lv = Game.talentLevels[talent.id] || 1;
-        var cdTime = (Game.player.isLizhi ? 7.5 : 15); 
-        Game.talentCD[talent.id] = cdTime; 
+                if (talent && (!Game.talentCD[talent.id] || Game.talentCD[talent.id] <= 0)) {
+          var lv = Game.talentLevels[talent.id] || 1;
+          
+          // 👇 核心修改：根据技能 ID 分配基础冷却时间
+          var baseCD = 15; 
+          if (talent.id === 't1') baseCD = 20;      // 遭到抱婴（全屏清怪，CD最长）
+          else if (talent.id === 't2') baseCD = 10; // 人参公鸡（短无敌，CD短一点）
+          else if (talent.id === 't3') baseCD = 14; // ikun开团（持续输出）
+          else if (talent.id === 't4') baseCD = 10; // 怎么荔枝（极强Buff）
+          else if (talent.id === 't5') baseCD = 8; // 千手鲲音（极强Buff）
+
+          // 荔枝状态下冷却减半
+          var cdTime = (Game.player.isLizhi ? baseCD / 2 : baseCD); 
+          Game.talentCD[talent.id] = cdTime; 
+                }
         
         if (talent.id === 't1') {
           var count = Game.enemies.length;
           Game.enemies = [];
           for (var i = 0; i < count; i++) {
-            Game.player.gainExp(Game.DATA.ENEMY_EXP_REWARD);
+            Game.player.gainExp(Game.DATA.ENEMY_EXP_REWARD* lv);
             Game.player.nailongBalls += 1;
           }
-          Game.toastText = "你会遭到抱婴！"; 
+          Game.toastText = "你会遭到抱婴的！"; 
           Game.toastTimer = 2.0;
         } 
         else if (talent.id === 't2') { 
           Game.player.invuln = 2 + lv; 
-          Game.toastText =  (2 + lv) + "秒无敌！"; 
+          if (Game.player.isLizhi) invincibleTime *= 2; 
+          
+          Game.player.invuln = invincibleTime; 
+          Game.toastText = invincibleTime + "秒无敌！"; 
           Game.toastTimer = 2.0; 
         }
         else if (talent.id === 't3') {
           Game.chickens = [];
-          var chickenCount = 10 + lv * 5;
+          var chickenCount = 10 + lv * 20;
           var spawnRadius = 120; 
           for (var i = 0; i < chickenCount; i++) {
             var angle = (Math.PI * 2 / chickenCount) * i;
@@ -117,7 +133,7 @@ window.addEventListener('keydown', function (e) {
               damage: 50 + (lv - 1) * 20
             });
           }
-          Game.toastText = "ikun开团！ " + chickenCount + " 只小鸡！"; 
+          Game.toastText = "ikun开团！ " ; 
           Game.toastTimer = 2.0;
         }
         else if (talent.id === 't4') { 
@@ -127,6 +143,8 @@ window.addEventListener('keydown', function (e) {
           Game.toastTimer = 2.0; 
         }
         else if (talent.id === 't5') { 
+          var armsTime = 4 + lv * 2;
+          if (Game.player.isLizhi) armsTime *= 2;
           Game.player.isSixArms = true; 
           Game.player.sixArmsTimer = 4 + lv * 2; 
           Game.toastText = "千手鲲音！"; 
@@ -149,8 +167,8 @@ window.addEventListener('keydown', function (e) {
   }
   if (Game.state === 'DIALOGUE') {
     if (k === '1') {
-      if (Game.player.nailongBalls >= 50) {
-        Game.player.nailongBalls -= 50; Game.toastText = "交易成功！"; Game.toastTimer = 3.0; 
+      if (Game.player.nailongBalls >= 1300) {
+        Game.player.nailongBalls -= 1300; Game.toastText = "交易成功！"; Game.toastTimer = 3.0; 
         Game.state = 'LEVEL2'; Game.level2.bossTriggered = true; Game.level2.showDialogueHint = false; Game.level2.stallX = -9999;
       } else {
         Game.state = 'LEVEL2'; Game.level2.bossTriggered = true; Game.level2.bossActive = true; Game.level2.triggerBossFight(); 
@@ -361,27 +379,65 @@ function update(dt) {
     if (Game.currentSkill && Game.currentSkill.effect) Game.currentSkill.effect.update(dt);
     return;
   }
-  if (Game.state === 'GAMEOVER') {
-    Game.gameOverTime += dt;
-    if (!Game._scoreSaved) {
-      Game._scoreSaved = true;
-      var finalScore = Game.player.level * 10 + Game.wave * 10 + Game.player.nailongBalls * 100;
-      var playerName = prompt('游戏结束！请输入你的大名：', '无名氏') || '无名氏';
-      var now = new Date(), timeStr = (now.getMonth() + 1) + '-' + now.getDate() + ' ' + String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
-      var rankData = JSON.parse(localStorage.getItem('game_rank') || '[]');
-      rankData.push({ name: playerName, score: finalScore, time: timeStr });
-      rankData.sort(function(a, b) { return b.score - a.score; }); if (rankData.length > 50) rankData.length = 50; 
-      localStorage.setItem('game_rank', JSON.stringify(rankData));
+
+      if (Game.state === 'GAMEOVER') {
+      Game.gameOverTime += dt;
+      if (!Game._scoreSaved) {
+        Game._scoreSaved = true; 
+        
+        var finalScore = Game.player.level * 10 + Game.wave * 10 + Game.player.nailongBalls * 100;
+        
+        // 👇 核心修复：先判断 nameBox 存不存在
+        var nameBox = document.getElementById('nameBox');
+        var submitBtn = document.getElementById('submitNameBtn');
+        
+        if (nameBox && submitBtn) {
+          nameBox.style.display = 'block';
+          submitBtn.onclick = function() {
+            var inputVal = document.getElementById('playerNameInput').value;
+            var playerName = inputVal ? inputVal.trim() : "无名氏";
+            if (!playerName) playerName = "无名氏";
+
+            var now = new Date();
+            var timeStr = (now.getMonth() + 1) + '-' + now.getDate() + ' ' + String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+
+            try {
+              var rankData = JSON.parse(localStorage.getItem('game_rank') || '[]');
+              rankData.push({ name: playerName, score: finalScore, time: timeStr });
+              rankData.sort(function(a, b) { return b.score - a.score; }); 
+              if (rankData.length > 50) rankData.length = 50; 
+              localStorage.setItem('game_rank', JSON.stringify(rankData));
+            } catch (e) {
+              console.error("存储失败：", e);
+            }
+            
+            nameBox.style.display = 'none'; 
+          };
+        } else {
+          // 如果 HTML 元素不存在，自动降级使用 prompt
+          var playerName = prompt('游戏结束！请输入你的大名：', '无名氏');
+          if (!playerName) playerName = "无名氏";
+          var now = new Date();
+          var timeStr = (now.getMonth() + 1) + '-' + now.getDate() + ' ' + String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+          var rankData = JSON.parse(localStorage.getItem('game_rank') || '[]');
+          rankData.push({ name: playerName, score: finalScore, time: timeStr });
+          rankData.sort(function(a, b) { return b.score - a.score; }); 
+          if (rankData.length > 50) rankData.length = 50; 
+          localStorage.setItem('game_rank', JSON.stringify(rankData));
+        }
+      }
+      return;
     }
-    return;
-  }
+
+
+
 
   if (Game.state === 'BOOK_PREVIEW') { if (Game.currentSkill && Game.currentSkill.learn) Game.currentSkill.learn.updatePreview(dt); return; }
   if (Game.state === 'MEDITATING') { if (Game.currentSkill && Game.currentSkill.learn) Game.currentSkill.learn.updateMeditation(dt); return; }
   if (Game.state !== 'PLAYING') return;
 
   Game.time += dt;
-  if (!Game.bossSpawned && (Game.time >= 30 || Game.player.level >= 5)) Game.boss.spawn(); 
+  if (!Game.bossSpawned && (Game.player.level >= 7)) Game.boss.spawn(); 
 
   if (Game.shakeTime > 0) Game.shakeTime -= dt;
   if (Game.player.invuln > 0) Game.player.invuln -= dt;
@@ -437,7 +493,7 @@ function restartGame() {
   Game.unlockedTalents = []; Game.talentCD = {}; Game.chickens = []; Game.talentLevels = {};
   
   Game.player.maxHp = 100; Game.player.hp = 100; Game.player.baseSpeed = 320;
-  Game.player.speedMul = 1; Game.player.level = 1; Game.player.exp = 0; Game.player.expNext = 20;
+  Game.player.speedMul = 1; Game.player.level = 0; Game.player.exp = 0; Game.player.expNext = 20;
   Game.player.fireTimer = 0; Game.player.fireRateMul = 1; Game.player.dmgMul = 1;
   Game.player.bulletSizeMul = 1; Game.player.ballMode = 'normal'; Game.player.nailongBalls = 0;
   Game.player.invuln = 1.0; Game.player.hitFlash = 0; Game.player.resetPosition();
@@ -446,6 +502,8 @@ function restartGame() {
 
   Game.boss.reset();
   Game.state = 'MENU';
+  var nameBox = document.getElementById('nameBox');
+  if (nameBox) nameBox.style.display = 'none';
 }
 
 Game.audio.init();

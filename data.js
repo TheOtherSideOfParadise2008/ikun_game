@@ -45,7 +45,7 @@ Game.DATA = {
     t3_kaitong:       { src: 'assets/t3_kaitong.png', w: 80, h: 80, color: '#ffff44' },
     t4_lizhi:         { src: 'assets/t4_lizhi.png',   w: 80, h: 80, color: '#ff44ff' },
     t5_qianshou_ui:   { src: 'assets/t5_qianshou_ui.png', w: 80, h: 80, color: '#44ffff' },
-    t6_qianshou_model:{ src: 'assets/kun.png', w: 60, h: 60, color: '#ffffff' },
+    t6_qianshou_model:{ src: 'assets/t6_qianshou_model.png', w: 60, h: 60, color: '#ffffff' },
     
     // 新技能3的实体图
     chicken_summon:   { src: 'assets/chicken_summon.png', w: 40, h: 40, color: '#ffff00' }

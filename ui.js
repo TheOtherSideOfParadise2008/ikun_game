@@ -99,8 +99,8 @@ Game.ui = {
     ctx.fillStyle = '#ffd700'; ctx.font = 'bold 24px "Microsoft YaHei"'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; 
     ctx.fillText('瓜摊老板：', 40, Game.H - 140);
     ctx.fillStyle = '#fff'; ctx.font = '22px "Microsoft YaHei"';
-    ctx.fillText('小子，想过去？交50个奶龙球出来，保你平安。', 40, Game.H - 100);
-    ctx.fillStyle = '#00ff00'; ctx.font = 'bold 20px "Microsoft YaHei"'; ctx.fillText('[1] 交出50个奶龙球', 40, Game.H - 50);
+    ctx.fillText('小子，想过去？交1300个奶龙球出来，买西瓜。', 40, Game.H - 100);
+    ctx.fillStyle = '#00ff00'; ctx.font = 'bold 20px "Microsoft YaHei"'; ctx.fillText('[1] 交出1300个奶龙球', 40, Game.H - 50);
     ctx.fillStyle = '#ff4444'; ctx.fillText('[2] 我不给，你能怎么着？', 400, Game.H - 50);
     ctx.restore(); 
   },

@@ -4,14 +4,14 @@ window.Game = window.Game || {};
 Game.boss = {
   active: false, x: 0, y: 0, w: 300, h: 300,
   hp: 2000, maxHp: 2000, lives: 2, phase: 1, speed: 90,
-  skillDamage: 20, timer: 3, state: 'idle', telegraph: 1.5,
+  skillDamage: 30, timer: 3, state: 'idle', telegraph: 1.5,
   invuln: false, hitFlash: 0, _lastAttackSound: 0,
 
   spawn: function() {
     Game.bossSpawned = true; Game.bossMode = true; this.active = true;
     this.w = 300; this.h = 300; this.x = Game.W / 2 - this.w / 2; this.y = 160;
     this.maxHp = 2000 * Math.pow(2, Game.wave - 1); this.hp = this.maxHp;
-    this.lives = 2; this.phase = 1; this.skillDamage = 20 * Math.pow(2, Game.wave - 1);
+    this.lives = 2; this.phase = 1; this.skillDamage = 80 * Math.pow(2, Game.wave - 1);
     this.speed = 90 + Game.wave * 10; this.timer = 3; this.state = 'idle';
     this.telegraph = 1.5; this.invuln = false; this.hitFlash = 0;
     Game.enemies.length = 0; Game.spawnTimer = 0; Game.audio.playSfx('mabao_intro');
@@ -188,6 +188,7 @@ Game.boss = {
   updateLightnings: function(dt) {
     for (var i = Game.lightnings.length - 1; i >= 0; i--) {
       var ln = Game.lightnings[i];
+      if (!ln) continue;
       ln.age += dt; ln.offsetX += ln.driftVx * dt; ln.offsetY += ln.driftVy * dt;
       if (ln.age >= ln.life) { Game.lightnings.splice(i, 1); continue; }
       if (!ln.hasHit && Game.player.invuln <= 0) {
